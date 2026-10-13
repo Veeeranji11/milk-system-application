@@ -1,5 +1,5 @@
 # render.yaml — Render.com Blueprint for MilkSync Cloud SaaS
-# Deploys: Web Service (Docker) + MySQL Database
+# Deploys: Web Service (Docker) + PostgreSQL Database (Free Tier)
 # Docs: https://render.com/docs/blueprint-spec
 
 services:
@@ -13,7 +13,9 @@ services:
     healthCheckPath: /actuator/health
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:mysql://${milk_system_db_host}:3306/milk_system?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+        fromDatabase:
+          name: milk-system-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: milk-system-db

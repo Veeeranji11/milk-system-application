@@ -8,7 +8,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    region: singapore   # Closest to India; change to: oregon, frankfurt, ohio
+    region: singapore
     plan: free
     healthCheckPath: /actuator/health
     envVars:
@@ -29,15 +29,11 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://milk-system-app.onrender.com
       - key: STORAGE_BASE_DIR
-        value: /app/cloud-storage
+        value: /tmp/cloud-storage
       - key: PAYMENT_PROVIDER
         value: MOCK
       - key: PORT
         value: "8080"
-    disk:
-      name: cloud-storage
-      mountPath: /app/cloud-storage
-      sizeGB: 1
 
 databases:
   - name: milk-system-db

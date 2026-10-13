@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/admin/dashboard}">
+                            <i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/farmers}">
+                            <i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/collections}">
+                            <i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/payments}">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/reports}">
+                            <i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Language switcher -->
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-light btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#rateSettingsModal">
+                        <i class="fa-solid fa-sliders me-1"></i> Rate: ₹<span th:text="${rateFactor}">7.5</span>/Fat%
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#societySettingsModal">
+                        <i class="fa-solid fa-gear me-1"></i> Society & UPI
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+                        <i class="fa-solid fa-qrcode me-1"></i> QR Scanner
+                    </button>
+                    <a th:href="@{/admin/collections/add}" class="btn btn-warning btn-sm fw-bold text-dark">
+                        <i class="fa-solid fa-plus me-1"></i> New Intake
+                    </a>
+                    <a th:href="@{/admin/farmers/add}" class="btn btn-light btn-sm fw-semibold">
+                        <i class="fa-solid fa-user-plus me-1"></i> Add Farmer
+                    </a>
+                    <form th:action="@{/logout}" method="post" class="d-inline ms-1">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-power-off me-1"></i> <span data-i18n="logout">Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Subscription Information & Payment Card -->
+        <div class="card-custom mb-4 border-start border-4" th:classappend="${subscription != null and subscription.isPremiumActive} ? 'border-success' : (${subscription != null and subscription.isTrialActive} ? 'border-primary' : 'border-danger')">
+            <div class="p-3 p-md-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="badge bg-primary text-uppercase px-2 py-1"><i class="fa-solid fa-crown me-1 text-warning"></i> System Subscription</span>
+                            <span th:if="${subscription != null and subscription.isPremiumActive}" class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i> ACTIVE (₹150 / Month Plan)</span>
+                            <span th:if="${subscription != null and subscription.isTrialActive and !subscription.isPremiumActive}" class="badge bg-info text-dark"><i class="fa-solid fa-clock me-1"></i> FREE TRIAL (<span th:text="${subscription.daysRemaining}">15</span> days left)</span>
+                            <span th:if="${subscription != null and !subscription.isAccessAllowed}" class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> EXPIRED - RENEWAL REQUIRED</span>
+                        </div>
+                        <h5 class="fw-bold mb-1 text-dark">
+                            Dairy Center Plan: <span class="text-primary fw-bold">₹150.00 / month</span>
+                            <small class="text-muted fw-normal ms-2">(Farmer Group Plan: ₹100 for 30 users)</small>
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            Status: <strong class="text-dark" th:text="${subscription != null ? subscription.statusLabel : 'ACTIVE'}">ACTIVE</strong> &bull;
+                            Valid Until: <strong class="text-dark" th:text="${subscription != null ? subscription.expiryDate : 'Active'}"></strong> &bull;
+                            Remaining: <strong class="text-success" th:text="${(subscription != null ? subscription.daysRemaining : 30) + ' Days'}">30 Days</strong> &bull;
+                            Active Farmers: <strong th:text="${totalFarmers}">5</strong> / <span class="badge bg-light text-dark border">30 User Capacity</span>
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#adminSubscriptionModal">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> Renew Subscription (₹150)
+                        </button>
+                        <button type="button" class="btn btn-outline-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#farmerQuotaModal">
+                            <i class="fa-solid fa-users-gear me-1"></i> 30-Farmer Plan (₹100)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards (5 Cards) -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="totalFarmers">Total Farmers</div>
+                        <div class="stat-value" th:text="${totalFarmers}">0</div>
+                        <small class="text-muted">Registered</small>
+                    </div>
+                    <div class="stat-icon icon-blue">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="todayMilk">Today's Milk</div>
+                        <div class="stat-value"><span th:text="${todayLitres}">0</span> <small class="fs-6 fw-normal text-muted">L</small></div>
+                        <small class="text-muted">🌅 <span th:text="${todayMorningLitres}">0</span>L | 🌇 <span th:text="${todayEveningLitres}">0</span>L</small>
+                    </div>
+                    <div class="stat-icon icon-green">
+                        <i class="fa-solid fa-bucket"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="todayPayout">Today's Total</div>
+                        <div class="stat-value text-primary">₹<span th:text="${todayAmount}">0</span></div>
+                        <small class="text-muted">Value collected</small>
+                    </div>
+                    <div class="stat-icon icon-amber">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="totalDisbursed">Total Paid Out</div>
+                        <div class="stat-value text-success">₹<span th:text="${totalPaid}">0</span></div>
+                        <small class="text-muted">Cash, UPI & Bank</small>
+                    </div>
+                    <div class="stat-icon icon-purple">
+                        <i class="fa-solid fa-vault"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="pendingBalance">Pending Balance</div>
+                        <div class="stat-value text-danger">₹<span th:text="${pendingBalance}">0</span></div>
+                        <small class="text-danger fw-semibold"><a th:href="@{/admin/payments}" class="text-decoration-none text-danger">Pay Balance &rarr;</a></small>
+                    </div>
+                    <div class="stat-icon icon-red">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Milk Collection Card + Dynamic Calculator -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-5">
+                <div class="card-custom h-100">
+                    <div class="card-custom-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="text-white mb-0"><i class="fa-solid fa-bolt me-2"></i><span data-i18n="quickEntry">Quick Milk Entry</span></h5>
+                        <span class="badge bg-light text-primary">Rate: ₹<span th:text="${rateFactor}">7.5</span>/Fat%</span>
+                    </div>
+                    <div class="p-4">
+                        <div th:if="${#lists.isEmpty(farmers)}" class="alert alert-warning">
+                            <i class="fa-solid fa-info-circle me-1"></i> No farmers registered yet. <a th:href="@{/admin/farmers/add}" class="alert-link">Add a farmer</a> first.
+                        </div>
+
+                        <form th:unless="${#lists.isEmpty(farmers)}" th:action="@{/admin/collections/add}" method="post" id="quickEntryForm">
+                            <input type="hidden" id="globalRateFactor" th:value="${rateFactor}">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">
+                                    <span data-i18n="farmer">Farmer</span> <span class="text-danger">*</span>
+                                </label>
+                                <select name="farmerId" class="form-select" required>
+                                    <option value="" disabled selected data-i18n="selectFarmer">-- Select Registered Farmer --</option>
+                                    <option th:each="f : ${farmers}" th:value="${f.id}" th:text="${f.name + ' (' + (f.village != null ? f.village : 'ID: ' + f.id) + ') - #' + f.id}"></option>
+                                </select>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary" data-i18n="shift">Shift</label>
+                                    <select name="shift" class="form-select">
+                                        <option value="Morning">🌅 Morning / ఉదయం</option>
+                                        <option value="Evening">🌇 Evening / సాయంత్రం</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary" data-i18n="date">Date</label>
+                                    <input type="date" name="date" class="form-control" th:value="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary">
+                                        <span data-i18n="litres">Milk Litres (L)</span> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" step="0.1" min="0.1" name="litres" id="quickLitres" class="form-control fw-bold" placeholder="e.g. 10.0" required oninput="calcQuickPreview()">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary">
+                                        <span data-i18n="fatPercent">Fat %</span> <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" step="0.1" min="1.0" max="15.0" name="fatPercentage" id="quickFat" class="form-control fw-bold" placeholder="e.g. 6.5" required oninput="onFatChange()">
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary">Quality</label>
+                                    <select name="quality" class="form-select">
+                                        <option value="Good" selected>Good</option>
+                                        <option value="Excellent (Grade A)">Excellent (Grade A)</option>
+                                        <option value="Standard">Standard</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small text-secondary">Collection Time</label>
+                                    <input type="time" name="collectionTime" class="form-control" th:value="${#temporals.format(#temporals.createNow(), 'HH:mm')}">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary">
+                                    <span data-i18n="ratePerLitre">Rate per Litre</span> (₹/L)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" step="0.01" min="1.0" name="ratePerLitre" id="quickRate" class="form-control fw-bold" placeholder="e.g. 48.75" oninput="calcQuickPreview()">
+                                    <span class="input-group-text">/ L</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Price Estimation Box -->
+                            <div class="p-3 mb-3 bg-light rounded border">
+                                <div class="d-flex justify-content-between text-muted small mb-1">
+                                    <span data-i18n="ratePerLitre">Rate per Litre:</span>
+                                    <strong class="text-dark">₹<span id="ratePreview">0.00</span> / L</strong>
+                                </div>
+                                <div class="d-flex justify-content-between fs-4 fw-bold text-success">
+                                    <span data-i18n="totalAmount">Total Payment:</span>
+                                    <span>₹<span id="amountPreview">0.00</span></span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
+                                <i class="fa-solid fa-check me-1"></i> <span data-i18n="saveEntry">Save Collection Entry</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Collections Table -->
+            <div class="col-lg-7">
+                <div class="card-custom h-100">
+                    <div class="card-custom-header">
+                        <h5><i class="fa-solid fa-list-check me-2 text-primary"></i><span data-i18n="recentCollections">Recent Milk Collections</span></h5>
+                        <a th:href="@{/admin/collections}" class="btn btn-outline-primary btn-sm" data-i18n="viewAll">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="date">Date / Shift</th>
+                                    <th data-i18n="farmer">Farmer</th>
+                                    <th data-i18n="litres">Litres</th>
+                                    <th>Quality</th>
+                                    <th data-i18n="ratePerLitre">Rate/L</th>
+                                    <th data-i18n="totalAmount">Amount</th>
+                                    <th class="text-end" data-i18n="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(recentCollections)}">
+                                    <td colspan="7" class="text-center py-4 text-muted">No collection records recorded yet.</td>
+                                </tr>
+                                <tr th:each="c : ${recentCollections}">
+                                    <td>
+                                        <div class="fw-semibold text-dark" th:text="${c.date}"></div>
+                                        <span th:if="${c.shift == 'Morning'}" class="badge badge-shift badge-morning">🌅 Morning</span>
+                                        <span th:if="${c.shift == 'Evening'}" class="badge badge-shift badge-evening">🌇 Evening</span>
+                                        <span th:if="${c.shift != 'Morning' and c.shift != 'Evening'}" class="badge badge-shift badge-morning" th:text="${c.shift}"></span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-dark" th:text="${c.farmerName != null ? c.farmerName : 'ID: ' + c.farmerId}"></span>
+                                    </td>
+                                    <td><strong th:text="${c.litres}"></strong> L</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border" th:text="${c.quality != null ? c.quality : 'Good'}"></span>
+                                    </td>
+                                    <td>₹<span th:text="${c.ratePerLitre}"></span></td>
+                                    <td><span class="fw-bold text-success">₹<span th:text="${c.amount}"></span></span></td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" th:unless="${c.morningEditLocked}">
+                                            <a th:href="@{'/admin/collections/edit/' + ${c.id}}" class="btn btn-outline-secondary" title="Edit Entry & Rate">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            <a th:href="@{'/admin/collections/delete/' + ${c.id}}" class="btn btn-outline-danger" title="Delete" onclick="return confirm('Delete this record?');">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        </div>
+                                        <span th:if="${c.morningEditLocked}" class="badge bg-secondary" title="Morning record locked after 12:00 PM">
+                                            <i class="fa-solid fa-lock me-1"></i> Locked
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Payments Disbursed Card -->
+        <div class="card-custom mb-4" th:if="${recentPayments != null and !#lists.isEmpty(recentPayments)}">
+            <div class="card-custom-header d-flex justify-content-between align-items-center">
+                <h5><i class="fa-solid fa-indian-rupee-sign me-2 text-success"></i>Recent Farmer Disbursements</h5>
+                <a th:href="@{/admin/payments}" class="btn btn-outline-success btn-sm">All Payments</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Farmer</th>
+                            <th>Amount (₹)</th>
+                            <th>Payment Mode</th>
+                            <th>Reference / Note</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${recentPayments}">
+                            <td><span class="badge bg-light text-secondary border" th:text="'#' + ${p.id}"></span></td>
+                            <td class="fw-bold text-dark" th:text="${p.farmerName != null ? p.farmerName : 'ID: ' + p.farmerId}"></td>
+                            <td><strong class="text-success fs-6">₹<span th:text="${p.amount}"></span></strong></td>
+                            <td><span class="badge bg-info text-dark" th:text="${p.mode}"></span></td>
+                            <td><small class="text-muted" th:text="${p.referenceNumber != null and !p.referenceNumber.isEmpty() ? p.referenceNumber : p.notes}"></small></td>
+                            <td><small class="text-dark" th:text="${p.paymentDate}"></small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Registered Farmers Overview -->
+        <div class="card-custom">
+            <div class="card-custom-header">
+                <h5><i class="fa-solid fa-users me-2 text-primary"></i><span data-i18n="farmers">Registered Farmers Directory</span></h5>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/payments/add}" class="btn btn-success btn-sm"><i class="fa-solid fa-indian-rupee-sign me-1"></i>Pay Farmer</a>
+                    <a th:href="@{/admin/farmers/add}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Farmer</a>
+                    <a th:href="@{/admin/farmers}" class="btn btn-outline-secondary btn-sm">Full Directory</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th data-i18n="farmer">Farmer Name</th>
+                            <th data-i18n="phone">Phone</th>
+                            <th data-i18n="village">Village</th>
+                            <th data-i18n="cattle">Buffalos</th>
+                            <th>UPI / Bank</th>
+                            <th class="text-end" data-i18n="actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(farmers)}">
+                            <td colspan="7" class="text-center py-4 text-muted">No farmers registered yet. Click "Add Farmer" to register your first farmer.</td>
+                        </tr>
+                        <tr th:each="f : ${farmers}">
+                            <td><span class="badge bg-light text-secondary border" th:text="'#' + ${f.id}"></span></td>
+                            <td>
+                                <div class="fw-bold text-dark fs-6" th:text="${f.name}"></div>
+                            </td>
+                            <td th:text="${f.phone}"></td>
+                            <td th:text="${f.village != null ? f.village : '-'}"></td>
+                            <td><span class="badge bg-info text-dark" th:text="${f.buffaloCount} + ' Animals'"></span></td>
+                            <td>
+                                <span th:if="${f.upiId != null and !f.upiId.isEmpty()}" class="badge badge-upi me-1" th:text="${f.upiId}"></span>
+                                <span th:if="${f.bankAccountNo != null and !f.bankAccountNo.isEmpty()}" class="badge badge-bank">A/C: <span th:text="${f.bankAccountNo}"></span></span>
+                                <span th:if="${(f.upiId == null or f.upiId.isEmpty()) and (f.bankAccountNo == null or f.bankAccountNo.isEmpty())}" class="text-muted small">Cash payout</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{'/admin/payments/add?farmerId=' + ${f.id}}" class="btn btn-outline-success" title="Record Payment">
+                                        <i class="fa-solid fa-indian-rupee-sign"></i> Pay
+                                    </a>
+                                    <a th:href="@{'/admin/farmers/' + ${f.id} + '/statement'}" class="btn btn-outline-primary" title="View Passbook / Statement">
+                                        <i class="fa-solid fa-file-invoice"></i> Passbook
+                                    </a>
+                                    <a th:href="@{'/admin/farmers/edit/' + ${f.id}}" class="btn btn-outline-secondary" title="Edit Farmer">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <a th:href="@{'/admin/farmers/delete/' + ${f.id}}" class="btn btn-outline-danger" title="Delete Farmer" onclick="return confirm('Are you sure you want to delete this farmer?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Rate Settings Modal -->
+    <div class="modal fade" id="rateSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/settings/rate}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-sliders me-2"></i>Update Milk Rate Settings</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Fat Rate Factor (₹ per 1.0% Fat)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.1" min="1.0" name="rateFactor" class="form-control" th:value="${rateFactor}" required>
+                                <span class="input-group-text">/ Fat %</span>
+                            </div>
+                            <div class="form-text">Example: At ₹7.50 factor, 6.0% fat milk = ₹45.00/L; 6.5% fat = ₹48.75/L.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary fw-semibold">Save New Rate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Society & UPI Settings Modal -->
+    <div class="modal fade" id="societySettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/settings/society}" method="post">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-building me-2"></i>Society & UPI Payment Profile</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Society / Center Name</label>
+                            <input type="text" name="societyName" class="form-control" th:value="${settings != null ? settings.societyName : 'Village Milk Collection Center'}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Society Contact Phone</label>
+                            <input type="text" name="societyContact" class="form-control" th:value="${settings != null ? settings.societyContact : '9848012345'}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Society Address</label>
+                            <input type="text" name="societyAddress" class="form-control" th:value="${settings != null ? settings.societyAddress : 'Main Road, Village Center'}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Society UPI ID (Google Pay / PhonePe)</label>
+                            <input type="text" name="societyUpiId" class="form-control" th:value="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Society UPI Account Holder Name</label>
+                            <input type="text" name="societyUpiName" class="form-control" th:value="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary fw-semibold">Save Society Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div class="modal fade" id="qrScannerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-qrcode me-2"></i>UPI Payment Scanner</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <h5 class="fw-bold mb-1" th:text="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}">T Naga veeranjineyulu</h5>
+                    <p class="text-muted mb-3">UPI ID: <code class="fs-6 fw-bold" th:text="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}">tnagaveeranjineyulu@oksbi</code></p>
+                    <div class="p-3 bg-white rounded d-inline-block border shadow-sm" style="max-width: 260px;">
+                        <img th:src="@{/images/payment_qr.jpg}" class="img-fluid rounded" alt="Google Pay UPI QR Code">
+                    </div>
+                    <div class="mt-3 text-muted small">Scan with Google Pay, PhonePe, Paytm, or any UPI App</div>
+                </div>
+                <div class="modal-footer">
+                    <a th:href="@{/admin/payments/add}" class="btn btn-success fw-bold"><i class="fa-solid fa-indian-rupee-sign me-1"></i> Disburse Payment</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Subscription Renewal Modal (₹150 Monthly Plan) -->
+    <div class="modal fade" id="adminSubscriptionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form th:action="@{/admin/subscription/renew}" method="post">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-crown me-2 text-warning"></i>Renew System Monthly Subscription</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-success d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-tag fs-3 me-3"></i>
+                            <div>
+                                <strong class="d-block">Affordable Monthly Subscription: ₹150 / month</strong>
+                                <small>Keeps your Village Milk Management System fully active with unlimited collections & payouts.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Subscription Duration</label>
+                            <select name="months" id="subMonthsSelect" class="form-select fw-bold" onchange="updateSubTotal()">
+                                <option value="1" selected>1 Month (₹150.00)</option>
+                                <option value="3">3 Months - Quarter (₹450.00)</option>
+                                <option value="6">6 Months - Half Year (₹900.00)</option>
+                                <option value="12">12 Months - Full Year (₹1,800.00)</option>
+                            </select>
+                        </div>
+
+                        <div class="p-3 bg-light rounded border mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Payable Amount:</span>
+                                <strong class="text-success fs-5">₹<span id="subTotalDisplay">150.00</span></strong>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Payment Mode:</span>
+                                <span>UPI / QR / Bank</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">UPI Transaction Reference Number <span class="text-danger">*</span></label>
+                            <input type="text" name="transactionRef" class="form-control" placeholder="e.g. UPI-TXN-984812345" required>
+                            <div class="form-text">Enter your Google Pay, PhonePe, or Bank transaction UTR number.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success fw-bold shadow-sm">
+                            <i class="fa-solid fa-check me-1"></i> Pay & Activate Subscription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Farmer Group Subscription Modal (₹100 for 30 users) -->
+    <div class="modal fade" id="farmerQuotaModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form th:action="@{/admin/subscription/farmer-quota}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-users-gear me-2"></i>Farmer Quota Subscription</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-primary d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-handshake fs-3 me-3"></i>
+                            <div>
+                                <strong class="d-block">Farmer Subscription: ₹100 for 30 users</strong>
+                                <small>Enables portal access and milk record history for up to 30 registered farmers.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Farmer Capacity</label>
+                            <input type="number" name="maxFarmers" class="form-control fw-bold" value="30" readonly>
+                            <div class="form-text">Standard plan covers 30 farmer user accounts.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Duration (Months)</label>
+                            <select name="months" class="form-select fw-bold">
+                                <option value="1" selected>1 Month (₹100.00)</option>
+                                <option value="3">3 Months (₹300.00)</option>
+                                <option value="6">6 Months (₹600.00)</option>
+                                <option value="12">12 Months (₹1,200.00)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Payment Reference Number <span class="text-danger">*</span></label>
+                            <input type="text" name="transactionRef" class="form-control" placeholder="e.g. UPI-FMR-30-PLAN" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary fw-bold shadow-sm">
+                            <i class="fa-solid fa-check me-1"></i> Activate 30-Farmer Plan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+    <script>
+        function onFatChange() {
+            const fat = parseFloat(document.getElementById('quickFat').value) || 0;
+            const factor = parseFloat(document.getElementById('globalRateFactor').value) || 7.5;
+            if (fat > 0) {
+                const autoRate = Math.round(fat * factor * 100) / 100;
+                document.getElementById('quickRate').value = autoRate.toFixed(2);
+            }
+            calcQuickPreview();
+        }
+
+        function calcQuickPreview() {
+            const litres = parseFloat(document.getElementById('quickLitres').value) || 0;
+            let rate = parseFloat(document.getElementById('quickRate').value);
+            const fat = parseFloat(document.getElementById('quickFat').value) || 0;
+            const factor = parseFloat(document.getElementById('globalRateFactor').value) || 7.5;
+
+            if (isNaN(rate) || rate <= 0) {
+                rate = Math.round(fat * factor * 100) / 100;
+            }
+
+            const amount = Math.round(litres * rate * 100) / 100;
+
+            document.getElementById('ratePreview').innerText = (rate || 0).toFixed(2);
+            document.getElementById('amountPreview').innerText = amount.toFixed(2);
+        }
+
+        function updateSubTotal() {
+            const months = parseInt(document.getElementById('subMonthsSelect').value) || 1;
+            const total = months * 150.0;
+            document.getElementById('subTotalDisplay').innerText = total.toFixed(2);
+        }
+    </script>
+</body>
+</html>
+
+

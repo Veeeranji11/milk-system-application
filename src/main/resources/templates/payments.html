@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money & Payments - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/farmers}">
+                            <i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/collections}">
+                            <i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/admin/payments}">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/reports}">
+                            <i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="openScannerModal()">
+                        <i class="fa-solid fa-qrcode me-1"></i> UPI Scanner
+                    </button>
+
+                    <a th:href="@{/admin/payments/add}" class="btn btn-warning btn-sm fw-bold text-dark">
+                        <i class="fa-solid fa-plus me-1"></i> Record Payment
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Filter & Header Card -->
+        <div class="card-custom mb-4">
+            <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fa-solid fa-indian-rupee-sign text-success me-2"></i>Money Management & Payments</h4>
+                    <p class="text-muted small mb-0">Record and track payments to farmers via Cash, Bank Transfer, or UPI.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <!-- Filter Form -->
+                    <form th:action="@{/admin/payments}" method="get" class="d-flex flex-wrap gap-2">
+                        <select name="farmerId" class="form-select form-select-sm" style="width: auto;">
+                            <option value="">-- All Farmers --</option>
+                            <option th:each="f : ${farmers}" th:value="${f.id}" th:text="${f.name}" th:selected="${f.id == filterFarmerId}"></option>
+                        </select>
+                        <input type="date" name="date" class="form-control form-control-sm" th:value="${filterDate}" style="width: auto;">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+                        <a th:if="${filterDate != null or filterFarmerId != null}" th:href="@{/admin/payments}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    </form>
+                    <button type="button" class="btn btn-primary fw-bold text-nowrap" onclick="openScannerModal()">
+                        <i class="fa-solid fa-qrcode me-1"></i> UPI QR Scanner
+                    </button>
+                    <a th:href="@{/admin/payments/add}" class="btn btn-success fw-bold text-nowrap">
+                        <i class="fa-solid fa-plus me-1"></i> Disburse Payment
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary for Payments -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="totalDisbursed">Total Payments Disbursed</div>
+                        <div class="stat-value text-success">₹<span th:text="${totalPaid}">0.00</span></div>
+                        <small class="text-muted">All successful disbursements</small>
+                    </div>
+                    <div class="stat-icon icon-green">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="pendingBalance">Society Outstanding Balance Due</div>
+                        <div class="stat-value text-danger">₹<span th:text="${totalPending}">0.00</span></div>
+                        <small class="text-muted">Net pending payouts across all farmers</small>
+                    </div>
+                    <div class="stat-icon icon-red">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Ledger Table -->
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>Receipt #</th>
+                            <th data-i18n="date">Payment Date</th>
+                            <th data-i18n="farmer">Farmer Name</th>
+                            <th>Method</th>
+                            <th>Reference / Txn ID</th>
+                            <th>Notes</th>
+                            <th>Amount Paid</th>
+                            <th class="text-end" data-i18n="actions">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(payments)}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-receipt fs-2 mb-2 d-block text-secondary"></i>
+                                No payment disbursement records found matching your filters.
+                            </td>
+                        </tr>
+                        <tr th:each="p : ${payments}">
+                            <td><span class="badge bg-light text-secondary border" th:text="'REC-' + ${p.id}"></span></td>
+                            <td class="fw-semibold text-dark" th:text="${p.paymentDate}"></td>
+                            <td>
+                                <a th:href="@{'/admin/farmers/' + ${p.farmerId} + '/statement'}" class="text-decoration-none fw-bold text-primary">
+                                    <span th:text="${p.farmerName != null ? p.farmerName : 'ID: ' + p.farmerId}"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <span th:if="${p.paymentMethod == 'UPI'}" class="badge badge-upi"><i class="fa-solid fa-qrcode me-1"></i>UPI</span>
+                                <span th:if="${p.paymentMethod == 'CASH'}" class="badge badge-cash">💵 Cash</span>
+                                <span th:if="${p.paymentMethod == 'BANK_TRANSFER'}" class="badge badge-bank">🏛️ Bank A/C</span>
+                            </td>
+                            <td>
+                                <code th:text="${p.transactionRef != null ? p.transactionRef : '-'}"></code>
+                            </td>
+                            <td th:text="${p.notes != null ? p.notes : '-'}"></td>
+                            <td><span class="fw-bold text-success fs-6">₹<span th:text="${p.amount}"></span></span></td>
+                            <td class="text-end">
+                                <a th:href="@{'/admin/payments/delete/' + ${p.id}}" class="btn btn-sm btn-outline-danger" title="Delete Payment Record" onclick="return confirm('Are you sure you want to delete this payment record?');">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- UPI Payment QR Scanner Modal -->
+    <div class="modal fade" id="scannerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-qrcode me-2"></i>UPI Payment Scanner & Code</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <h5 class="fw-bold mb-1" th:text="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}">T Naga veeranjineyulu</h5>
+                    <p class="text-muted mb-3">
+                        UPI ID: <code class="fs-6 fw-bold text-primary" id="modalUpiId" th:text="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}">tnagaveeranjineyulu@oksbi</code>
+                        <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="copyModalUpi()" title="Copy UPI ID">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </p>
+
+                    <!-- QR Scanner Image Container -->
+                    <div class="p-3 bg-white rounded d-inline-block border shadow-sm" style="max-width: 260px;">
+                        <img th:src="@{/images/payment_qr.jpg}" class="img-fluid rounded" alt="Google Pay UPI QR Code">
+                    </div>
+
+                    <div class="mt-3 text-muted small">
+                        <i class="fa-solid fa-camera me-1"></i> Scan with Google Pay, PhonePe, Paytm, BHIM, or any UPI App.
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <a th:href="@{/admin/payments/add}" class="btn btn-success fw-bold">
+                        <i class="fa-solid fa-money-bill-transfer me-1"></i> Record Payout
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+    <script>
+        function openScannerModal() {
+            new bootstrap.Modal(document.getElementById('scannerModal')).show();
+        }
+
+        function copyModalUpi() {
+            const upiId = document.getElementById('modalUpiId').innerText.trim();
+            navigator.clipboard.writeText(upiId).then(() => {
+                alert('UPI ID copied to clipboard: ' + upiId);
+            });
+        }
+    </script>
+</body>
+</html>

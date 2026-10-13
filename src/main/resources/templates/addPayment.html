@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disburse Payment & UPI Scanner - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .qr-card-scanner {
+            background: linear-gradient(135deg, #f8faff 0%, #eef3fc 100%);
+            border: 2px dashed #0d6efd;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        .qr-frame {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            max-width: 240px;
+        }
+        .qr-frame img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span></a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/farmers}"><i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span></a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/collections}"><i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span></a></li>
+                    <li class="nav-item"><a class="nav-link active" th:href="@{/admin/payments}"><i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span></a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/reports}"><i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span></a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+                    <a th:href="@{/admin/payments}" class="btn btn-outline-light btn-sm">
+                        <i class="fa-solid fa-receipt me-1"></i> <span data-i18n="payments">All Payments</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            
+            <!-- Left / Main: Payment Form -->
+            <div class="col-lg-7">
+                <div class="card-custom mb-4">
+                    <div class="card-custom-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-money-bill-wave me-2"></i><span data-i18n="recordPayment">Record Farmer Payment</span></h5>
+                        <button type="button" class="btn btn-sm btn-light fw-bold text-dark" onclick="toggleScannerModal()">
+                            <i class="fa-solid fa-qrcode me-1"></i> Scan QR
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <form th:action="@{/admin/payments/add}" method="post" id="paymentForm">
+                            
+                            <!-- Hidden UPI Config from Settings -->
+                            <input type="hidden" id="societyUpiId" th:value="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}">
+                            <input type="hidden" id="societyUpiName" th:value="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}">
+                            <input type="hidden" id="farmerUpiId" th:value="${selectedFarmer != null ? selectedFarmer.upiId : ''}">
+
+                            <!-- Farmer Select -->
+                            <div class="mb-3">
+                                <label for="farmerId" class="form-label fw-semibold"><span data-i18n="farmer">Select Farmer</span> <span class="text-danger">*</span></label>
+                                <select id="farmerId" name="farmerId" class="form-select" required autofocus onchange="onFarmerSelect(this)">
+                                    <option value="" disabled th:selected="${selectedFarmerId == null}">-- Select Farmer to Pay --</option>
+                                    <option th:each="farmer : ${farmers}"
+                                            th:value="${farmer.id}"
+                                            th:text="${farmer.name + ' (' + (farmer.village != null ? farmer.village : 'ID: ' + farmer.id) + ') - #' + farmer.id}"
+                                            th:selected="${farmer.id == selectedFarmerId}"></option>
+                                </select>
+                            </div>
+
+                            <!-- Pending Balance Indicator (if pre-selected) -->
+                            <div class="p-3 mb-3 bg-light rounded border" th:if="${selectedFarmer != null}">
+                                <div class="d-flex justify-content-between text-muted small mb-1">
+                                    <span>Selected Farmer:</span>
+                                    <strong class="text-dark" th:text="${selectedFarmer.name}"></strong>
+                                </div>
+                                <div class="d-flex justify-content-between text-muted small mb-1" th:if="${selectedFarmer.upiId != null or selectedFarmer.bankAccountNo != null}">
+                                    <span>Payment Details:</span>
+                                    <div>
+                                        <span th:if="${selectedFarmer.upiId != null and !selectedFarmer.upiId.isEmpty()}" class="badge badge-upi me-1">
+                                            <i class="fa-solid fa-mobile-screen me-1"></i><span th:text="${selectedFarmer.upiId}"></span>
+                                        </span>
+                                        <span th:if="${selectedFarmer.bankAccountNo != null and !selectedFarmer.bankAccountNo.isEmpty()}" class="badge badge-bank">
+                                            A/C: <span th:text="${selectedFarmer.bankAccountNo}"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between fs-5 fw-bold text-danger">
+                                    <span><span data-i18n="pendingBalance">Pending Balance Due</span>:</span>
+                                    <span>₹<span th:text="${farmerPending != null ? farmerPending : '0.00'}">0.00</span></span>
+                                </div>
+                            </div>
+
+                            <!-- Payment Amount -->
+                            <div class="mb-3">
+                                <label for="amount" class="form-label fw-semibold"><span data-i18n="amount">Payment Amount (₹)</span> <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" step="0.01" min="1.0" id="amount" name="amount" class="form-control fw-bold fs-5 text-success"
+                                           th:value="${farmerPending != null and farmerPending > 0 ? farmerPending : ''}"
+                                           placeholder="e.g. 500.00" required oninput="updateDynamicQR()">
+                                </div>
+                            </div>
+
+                            <!-- Date and Payment Method -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label for="paymentDate" class="form-label fw-semibold"><span data-i18n="date">Payment Date</span> <span class="text-danger">*</span></label>
+                                    <input type="date" id="paymentDate" name="paymentDate" class="form-control" th:value="${#temporals.format(today, 'yyyy-MM-dd')}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label for="paymentMethod" class="form-label fw-semibold"><span data-i18n="paymentMethod">Payment Method</span> <span class="text-danger">*</span></label>
+                                    <select id="paymentMethod" name="paymentMethod" class="form-select" required onchange="onPaymentMethodChange(this)">
+                                        <option value="CASH">💵 Cash / నగదు</option>
+                                        <option value="UPI" selected>📱 UPI (PhonePe / GPay / Paytm)</option>
+                                        <option value="BANK_TRANSFER">🏛️ Bank Transfer (NEFT/IMPS)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Transaction Reference -->
+                            <div class="mb-3">
+                                <label for="transactionRef" class="form-label fw-semibold">Transaction Reference / UTR / Receipt ID</label>
+                                <input type="text" id="transactionRef" name="transactionRef" class="form-control" placeholder="e.g. UPI-98762312 or UTR 4209123847">
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="mb-4">
+                                <label for="notes" class="form-label fw-semibold">Notes / Remarks</label>
+                                <input type="text" id="notes" name="notes" class="form-control" placeholder="e.g. Weekly milk payment payout">
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success flex-fill py-2 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-check me-1"></i> Confirm & Save Payment
+                                </button>
+                                <a th:href="@{/admin/payments}" class="btn btn-outline-secondary py-2">
+                                    Cancel
+                                </a>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive UPI QR Code Scanner Widget -->
+            <div class="col-lg-5" id="upiScannerSideCard">
+                <div class="card-custom p-4 text-center">
+                    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-qrcode fs-4 text-primary"></i>
+                            <h6 class="fw-bold mb-0 text-dark">UPI Payment Scanner</h6>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success">Live Ready</span>
+                    </div>
+
+                    <!-- Recipient Name & UPI -->
+                    <div class="mb-3">
+                        <div class="fw-bold text-dark fs-6" id="qrTargetName" th:text="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}">T Naga veeranjineyulu</div>
+                        <div class="text-muted small">
+                            UPI ID: <code class="fw-bold text-primary" id="qrTargetUpi" th:text="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}">tnagaveeranjineyulu@oksbi</code>
+                            <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-decoration-none" onclick="copyUpiId()" title="Copy UPI ID">
+                                <i class="fa-regular fa-copy text-muted"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- QR Display Frame -->
+                    <div class="qr-frame my-2">
+                        <img id="dynamicQrImage" th:src="@{/images/payment_qr.jpg}" alt="UPI Payment Scanner QR Code">
+                    </div>
+
+                    <div class="mt-2 text-muted small">
+                        <i class="fa-solid fa-camera me-1"></i> Scan with <strong>Google Pay, PhonePe, Paytm, BHIM</strong>
+                    </div>
+
+                    <!-- Live Amount Badge -->
+                    <div class="p-2 mt-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Embedded Amount:</span>
+                        <strong class="text-success fs-5">₹<span id="qrAmountDisplay">0.00</span></strong>
+                    </div>
+
+                    <!-- Pay Directly via Intent URL on Mobile -->
+                    <div class="mt-3 d-grid">
+                        <a id="payIntentBtn" href="#" class="btn btn-primary fw-bold">
+                            <i class="fa-solid fa-mobile-screen-button me-1"></i> Pay via UPI Mobile App
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- QR Modal for Large View -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-qrcode me-2"></i>UPI Payment QR Code</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <h5 class="fw-bold mb-1" th:text="${settings != null ? settings.societyUpiName : 'T Naga veeranjineyulu'}">T Naga veeranjineyulu</h5>
+                    <p class="text-muted mb-3">UPI ID: <code class="fs-6 fw-bold" th:text="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}">tnagaveeranjineyulu@oksbi</code></p>
+                    <div class="p-3 bg-light rounded d-inline-block border shadow-sm">
+                        <img th:src="@{/images/payment_qr.jpg}" style="max-width: 260px; height: auto;" class="rounded" alt="Payment Scanner">
+                    </div>
+                    <div class="mt-3 text-muted small">Scan with any UPI app to transfer funds instantly.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="copyUpiId()"><i class="fa-solid fa-copy me-1"></i> Copy UPI ID</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+    <script>
+        function onFarmerSelect(selectElem) {
+            const farmerId = selectElem.value;
+            if (farmerId) {
+                window.location.href = '/admin/payments/add?farmerId=' + farmerId;
+            }
+        }
+
+        function onPaymentMethodChange(selectElem) {
+            const method = selectElem.value;
+            const scannerCard = document.getElementById('upiScannerSideCard');
+            if (method === 'UPI') {
+                scannerCard.style.display = 'block';
+                updateDynamicQR();
+            } else {
+                scannerCard.style.display = 'none';
+            }
+        }
+
+        function updateDynamicQR() {
+            const amountVal = parseFloat(document.getElementById('amount').value) || 0;
+            const upiId = document.getElementById('societyUpiId').value || 'tnagaveeranjineyulu@oksbi';
+            const name = encodeURIComponent(document.getElementById('societyUpiName').value || 'T Naga veeranjineyulu');
+
+            document.getElementById('qrAmountDisplay').innerText = amountVal.toFixed(2);
+
+            let upiUri = `upi://pay?pa=${upiId}&pn=${name}&cu=INR`;
+            if (amountVal > 0) {
+                upiUri += `&am=${amountVal.toFixed(2)}`;
+            }
+
+            document.getElementById('payIntentBtn').href = upiUri;
+
+            // Generate dynamic QR code image if amount > 0, otherwise show official static Google Pay QR
+            const qrImg = document.getElementById('dynamicQrImage');
+            if (amountVal > 0) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUri)}`;
+            } else {
+                qrImg.src = '/images/payment_qr.jpg';
+            }
+        }
+
+        function copyUpiId() {
+            const upiId = document.getElementById('societyUpiId').value || 'tnagaveeranjineyulu@oksbi';
+            navigator.clipboard.writeText(upiId).then(() => {
+                alert('UPI ID copied to clipboard: ' + upiId);
+            });
+        }
+
+        function toggleScannerModal() {
+            new bootstrap.Modal(document.getElementById('qrModal')).show();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDynamicQR();
+        });
+    </script>
+</body>
+</html>

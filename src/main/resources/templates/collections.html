@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milk Collections - Village Milk Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/farmers}">
+                            <i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/admin/collections}">
+                            <i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/payments}">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/reports}">
+                            <i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+                    <a th:href="@{/admin/collections/add}" class="btn btn-warning btn-sm fw-semibold text-dark">
+                        <i class="fa-solid fa-plus me-1"></i> <span data-i18n="recordMilk">New Collection</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Filter & Header Card -->
+        <div class="card-custom mb-4">
+            <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fa-solid fa-bottle-droplet text-primary me-2"></i><span data-i18n="recentCollections">Daily Milk Collection Records</span></h4>
+                    <p class="text-muted small mb-0">Daily milk intake logs, fat percentages, rates and payout amounts.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <!-- Multi-Criteria Search & Filter Form (Farmer ID, Date, Quality) -->
+                    <form th:action="@{/admin/collections}" method="get" class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <select name="farmerId" class="form-select form-select-sm">
+                                <option value="">-- All Farmers --</option>
+                                <option th:each="f : ${farmers}"
+                                        th:value="${f.id}"
+                                        th:text="${f.name + ' (' + (f.code != null ? f.code : '#' + f.id) + ')'}"
+                                        th:selected="${filterFarmerId != null and filterFarmerId == f.id}"></option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" name="date" class="form-control form-select-sm" th:value="${filterDate}" title="Filter by Date">
+                        </div>
+                        <div class="col-auto">
+                            <select name="quality" class="form-select form-select-sm">
+                                <option value="">-- All Qualities --</option>
+                                <option value="Good" th:selected="${filterQuality == 'Good'}">Good</option>
+                                <option value="Excellent (Grade A)" th:selected="${filterQuality == 'Excellent (Grade A)'}">Excellent (Grade A)</option>
+                                <option value="Standard" th:selected="${filterQuality == 'Standard'}">Standard</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter me-1"></i> Search</button>
+                            <a th:if="${filterDate != null or filterFarmerId != null or (filterQuality != null and !filterQuality.isEmpty())}" th:href="@{/admin/collections}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                                Reset
+                            </a>
+                        </div>
+                    </form>
+                    <a th:href="@{/admin/collections/add}" class="btn btn-warning btn-sm fw-semibold text-dark text-nowrap ms-auto">
+                        <i class="fa-solid fa-plus me-1"></i> <span data-i18n="recordMilk">Add Entry</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Stats for Current View -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">
+                            <span th:if="${filterDate != null}" th:text="'Milk on ' + ${filterDate}">Selected Date Milk</span>
+                            <span th:unless="${filterDate != null}">Total Milk Collected</span>
+                        </div>
+                        <div class="stat-value"><span th:text="${totalLitres}">0.0</span> <small class="fs-6 fw-normal text-muted">L</small></div>
+                    </div>
+                    <div class="stat-icon icon-blue">
+                        <i class="fa-solid fa-bucket"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">
+                            <span th:if="${filterDate != null}" th:text="'Payout on ' + ${filterDate}">Selected Date Payout</span>
+                            <span th:unless="${filterDate != null}">Total Milk Payout Amount</span>
+                        </div>
+                        <div class="stat-value">₹<span th:text="${totalAmount}">0.00</span></div>
+                    </div>
+                    <div class="stat-icon icon-amber">
+                        <i class="fa-solid fa-indian-rupee-sign"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collections Table -->
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th data-i18n="date">Date & Time</th>
+                            <th data-i18n="shift">Shift</th>
+                            <th data-i18n="farmer">Farmer Name</th>
+                            <th data-i18n="quantity">Litres (L)</th>
+                            <th>Quality</th>
+                            <th data-i18n="fatPercentage">Fat %</th>
+                            <th data-i18n="ratePerLitre">Rate / L</th>
+                            <th data-i18n="totalAmount">Total (₹)</th>
+                            <th class="text-end" data-i18n="actions">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(collections)}">
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-clipboard-list fs-2 mb-2 d-block text-secondary"></i>
+                                No milk collection records found matching your search criteria.
+                            </td>
+                        </tr>
+                        <tr th:each="c : ${collections}">
+                            <td><span class="badge bg-light text-secondary border" th:text="'#' + ${c.id}"></span></td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${c.date}"></div>
+                                <small class="text-muted" th:text="${c.collectionTime != null ? c.collectionTime : 'Morning Intake'}"></small>
+                            </td>
+                            <td>
+                                <span th:if="${c.shift == 'Morning'}" class="badge badge-shift badge-morning">🌅 <span data-i18n="morning">Morning</span></span>
+                                <span th:if="${c.shift == 'Evening'}" class="badge badge-shift badge-evening">🌇 <span data-i18n="evening">Evening</span></span>
+                                <span th:if="${c.shift != 'Morning' and c.shift != 'Evening'}" class="badge badge-shift badge-morning" th:text="${c.shift}"></span>
+                            </td>
+                            <td>
+                                <a th:href="@{'/admin/farmers/' + ${c.farmerId} + '/statement'}" class="text-decoration-none fw-bold text-primary">
+                                    <span th:text="${c.farmerName != null ? c.farmerName : 'ID: ' + c.farmerId}"></span>
+                                </a>
+                            </td>
+                            <td><strong th:text="${c.litres}"></strong> L</td>
+                            <td>
+                                <span class="badge bg-light text-dark border" th:text="${c.quality != null ? c.quality : 'Good'}"></span>
+                            </td>
+                            <td><span class="badge bg-light text-dark border" th:text="${c.fatPercentage + '%'}"></span></td>
+                            <td>₹<span th:text="${c.ratePerLitre}"></span></td>
+                            <td><span class="fw-bold text-success fs-6">₹<span th:text="${c.amount}"></span></span></td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" th:unless="${c.morningEditLocked}">
+                                    <a th:href="@{'/admin/collections/edit/' + ${c.id}}" class="btn btn-outline-secondary" title="Edit Entry & Rate">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <a th:href="@{'/admin/collections/delete/' + ${c.id}}" class="btn btn-outline-danger" title="Delete Collection Entry" onclick="return confirm('Are you sure you want to delete this collection entry?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                                <span th:if="${c.morningEditLocked}" class="badge bg-secondary" title="Morning milk data cannot be edited after morning hours (12:00 PM)">
+                                    <i class="fa-solid fa-lock me-1"></i> Locked
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+</body>
+</html>

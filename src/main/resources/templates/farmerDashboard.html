@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Farmer Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-farmer py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/farmer/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#farmerNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="farmerNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/farmer/dashboard}">
+                            <i class="fa-solid fa-house me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/farmer/statement}">
+                            <i class="fa-solid fa-file-invoice me-1"></i> <span data-i18n="passbook">Passbook / Statement</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/farmer/payments}">
+                            <i class="fa-solid fa-receipt me-1"></i> <span data-i18n="payments">My Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/farmer/change-password}">
+                            <i class="fa-solid fa-key me-1"></i> <span data-i18n="changePassword">Change Password</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Language switcher -->
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+
+                    <span class="badge bg-light text-dark px-3 py-2 fw-semibold">
+                        <i class="fa-solid fa-user me-1 text-success"></i> <span th:text="${farmer.name}">Farmer</span> (#<span th:text="${farmer.id}"></span>)
+                    </span>
+                    <form th:action="@{/logout}" method="post" class="d-inline ms-1">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-power-off me-1"></i> <span data-i18n="logout">Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Farmer Welcome & Profile Header Banner -->
+        <div class="card-custom mb-4" style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: white;">
+            <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 px-3 py-1 fw-bold fs-6">
+                        Unique Farmer ID: <span th:text="${farmer.code != null ? farmer.code : 'FMR-' + farmer.id}"></span> (#<span th:text="${farmer.id}"></span>)
+                    </span>
+                    <h3 class="fw-bold mb-1"><span th:text="${farmer.name}">Ramesh Reddy</span></h3>
+                    <p class="mb-0 opacity-75">
+                        <i class="fa-solid fa-location-dot me-1"></i> <span th:text="${farmer.village != null ? farmer.village : 'Village'}">Gollapudi</span> |
+                        <i class="fa-solid fa-phone ms-2 me-1"></i> <span th:text="${farmer.phone}">9848011111</span> |
+                        <i class="fa-solid fa-cow ms-2 me-1"></i> <span th:text="${farmer.buffaloCount}">5</span> <span data-i18n="cattle">Animals</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-warning fw-bold text-dark px-3 py-2 shadow" data-bs-toggle="modal" data-bs-target="#farmerSubModal">
+                        <i class="fa-solid fa-crown me-1"></i> Subscription
+                    </button>
+                    <a th:href="@{/farmer/statement}" class="btn btn-light fw-bold text-dark px-3 py-2 shadow">
+                        <i class="fa-solid fa-print me-1"></i> <span data-i18n="passbook">Passbook</span>
+                    </a>
+                    <a th:href="@{/farmer/change-password}" class="btn btn-outline-light fw-semibold px-3 py-2 shadow">
+                        <i class="fa-solid fa-key me-1"></i> <span data-i18n="changePassword">Password</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Farmer Subscription Status Alert / Card -->
+        <div class="card-custom mb-4 p-3 border-start border-4" th:classappend="${subscription != null and subscription.isPremiumActive} ? 'border-success bg-white' : (${subscription != null and subscription.isTrialActive} ? 'border-primary bg-white' : 'border-danger bg-white')">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-secondary text-uppercase"><i class="fa-solid fa-crown me-1 text-warning"></i> Farmer Portal Plan</span>
+                        <span th:if="${subscription != null and subscription.isPremiumActive}" class="badge bg-success">ACTIVE SUBSCRIPTION</span>
+                        <span th:if="${subscription != null and subscription.isTrialActive and !subscription.isPremiumActive}" class="badge bg-info text-dark">FREE TRIAL (<span th:text="${subscription.daysRemaining}">15</span> days left)</span>
+                        <span th:if="${subscription != null and !subscription.isAccessAllowed}" class="badge bg-danger">EXPIRED - RENEWAL REQUIRED</span>
+                    </div>
+                    <small class="text-muted">
+                        Expires: <strong class="text-dark" th:text="${subscription != null ? subscription.expiryDate : 'Active'}"></strong> &bull;
+                        Days Left: <strong class="text-success" th:text="${(subscription != null ? subscription.daysRemaining : 15) + ' Days'}"></strong> &bull;
+                        Plan Cost: <strong>₹10/mo</strong> (or Covered by Dairy Group Plan)
+                    </small>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#farmerSubModal">
+                        <i class="fa-solid fa-indian-rupee-sign me-1"></i> Renew / Pay Portal Access
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4 Cards: Supplied, Earned, Paid, Pending -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="litres">Total Milk Supplied</div>
+                        <div class="stat-value text-primary"><span th:text="${summary.totalLitres}">0</span> <small class="fs-6 fw-normal text-muted">L</small></div>
+                        <small class="text-muted"><span th:text="${summary.totalSuppliesCount}">0</span> deliveries</small>
+                    </div>
+                    <div class="stat-icon icon-blue">
+                        <i class="fa-solid fa-bucket"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="totalEarned">Total Earned</div>
+                        <div class="stat-value text-dark">₹<span th:text="${summary.totalEarned}">0.00</span></div>
+                        <small class="text-muted">Gross Earnings</small>
+                    </div>
+                    <div class="stat-icon icon-amber">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="paidAmount">Total Paid</div>
+                        <div class="stat-value text-success">₹<span th:text="${summary.totalPaid}">0.00</span></div>
+                        <small class="text-success fw-semibold">Disbursed to you</small>
+                    </div>
+                    <div class="stat-icon icon-green">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title" data-i18n="pendingBalance">Pending Balance</div>
+                        <div class="stat-value text-danger">₹<span th:text="${summary.pendingBalance}">0.00</span></div>
+                        <small class="text-muted">Balance to be paid</small>
+                    </div>
+                    <div class="stat-icon icon-red">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily & Monthly Supply Totals Banner -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card-custom p-3 bg-light border h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-white rounded-circle text-primary shadow-sm">
+                            <i class="fa-solid fa-calendar-day fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Today's Milk Supply</h6>
+                            <div class="fs-5 fw-bold text-primary"><span th:text="${todayLitres}">0</span> <small class="text-muted fs-6">Litres</small> &bull; ₹<span th:text="${todayAmount}">0.00</span></div>
+                            <small class="text-muted">Recorded deliveries for today</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-custom p-3 bg-light border h-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-white rounded-circle text-success shadow-sm">
+                            <i class="fa-solid fa-calendar-days fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">This Month's Total Supply</h6>
+                            <div class="fs-5 fw-bold text-success"><span th:text="${monthlyLitres}">0</span> <small class="text-muted fs-6">Litres</small> &bull; ₹<span th:text="${monthlyAmount}">0.00</span></div>
+                            <small class="text-muted">Cumulative intake for current month</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables: Recent Deliveries & Recent Payments -->
+        <div class="row g-4">
+            <!-- Recent Milk Deliveries -->
+            <div class="col-lg-7">
+                <div class="card-custom h-100">
+                    <div class="card-custom-header">
+                        <h5><i class="fa-solid fa-bottle-droplet me-2 text-primary"></i><span data-i18n="mySupplies">Recent Milk Deliveries</span></h5>
+                        <a th:href="@{/farmer/statement}" class="btn btn-outline-primary btn-sm" data-i18n="viewAll">Full Passbook</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="date">Date</th>
+                                    <th data-i18n="shift">Shift</th>
+                                    <th data-i18n="litres">Litres</th>
+                                    <th data-i18n="fatPercent">Fat %</th>
+                                    <th data-i18n="ratePerLitre">Rate/L</th>
+                                    <th class="text-end" data-i18n="totalAmount">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(recentCollections)}">
+                                    <td colspan="6" class="text-center py-4 text-muted">No milk deliveries recorded yet.</td>
+                                </tr>
+                                <tr th:each="c : ${recentCollections}">
+                                    <td class="fw-semibold text-dark" th:text="${c.date}">2026-09-01</td>
+                                    <td>
+                                        <span th:if="${c.shift == 'Morning'}" class="badge badge-shift badge-morning">🌅 Morning</span>
+                                        <span th:if="${c.shift == 'Evening'}" class="badge badge-shift badge-evening">🌇 Evening</span>
+                                        <span th:if="${c.shift != 'Morning' and c.shift != 'Evening'}" class="badge badge-shift badge-morning" th:text="${c.shift}"></span>
+                                    </td>
+                                    <td><strong th:text="${c.litres}"></strong> L</td>
+                                    <td><span class="badge bg-light text-dark border" th:text="${c.fatPercentage + '%'}"></span></td>
+                                    <td>₹<span th:text="${c.ratePerLitre}"></span></td>
+                                    <td class="text-end fw-bold text-success">₹<span th:text="${c.amount}"></span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Payments Received -->
+            <div class="col-lg-5">
+                <div class="card-custom h-100">
+                    <div class="card-custom-header">
+                        <h5><i class="fa-solid fa-receipt me-2 text-success"></i><span data-i18n="payments">Recent Payments Received</span></h5>
+                        <a th:href="@{/farmer/payments}" class="btn btn-outline-success btn-sm" data-i18n="viewAll">All Receipts</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom align-middle">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="date">Date</th>
+                                    <th>Method</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(recentPayments)}">
+                                    <td colspan="3" class="text-center py-4 text-muted">No payments disbursed yet.</td>
+                                </tr>
+                                <tr th:each="p : ${recentPayments}">
+                                    <td>
+                                        <div class="fw-semibold text-dark" th:text="${p.paymentDate}"></div>
+                                        <small class="text-muted" th:text="${p.transactionRef != null ? p.transactionRef : 'Direct Payout'}"></small>
+                                    </td>
+                                    <td>
+                                        <span th:if="${p.paymentMethod == 'UPI'}" class="badge badge-upi">UPI</span>
+                                        <span th:if="${p.paymentMethod == 'CASH'}" class="badge badge-cash">Cash</span>
+                                        <span th:if="${p.paymentMethod == 'BANK_TRANSFER'}" class="badge badge-bank">Bank A/C</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="fw-bold text-success fs-6">+ ₹<span th:text="${p.amount}"></span></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank & UPI Account Details Card -->
+        <div class="card-custom mt-4">
+            <div class="card-custom-header">
+                <h5><i class="fa-solid fa-building-columns me-2 text-primary"></i><span data-i18n="bankDetails">Registered Bank & UPI Payment Details</span></h5>
+            </div>
+            <div class="p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded border">
+                            <div class="text-muted small">Bank Account Number:</div>
+                            <div class="fw-bold text-dark fs-6" th:text="${farmer.bankAccountNo != null and !farmer.bankAccountNo.isEmpty() ? farmer.bankAccountNo : 'Not Added (Cash Mode)'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded border">
+                            <div class="text-muted small">IFSC Code:</div>
+                            <div class="fw-bold text-dark fs-6" th:text="${farmer.ifscCode != null and !farmer.ifscCode.isEmpty() ? farmer.ifscCode : 'N/A'}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded border">
+                            <div class="text-muted small">UPI ID / PhonePe / GPay:</div>
+                            <div class="fw-bold text-primary fs-6" th:text="${farmer.upiId != null and !farmer.upiId.isEmpty() ? farmer.upiId : 'Not Added'}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Farmer Subscription Modal -->
+    <div class="modal fade" id="farmerSubModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form th:action="@{/farmer/subscription/pay}" method="post">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-crown me-2 text-warning"></i>Farmer Portal Subscription</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="alert alert-success d-flex align-items-center mb-3">
+                            <i class="fa-solid fa-mobile-screen-button fs-3 me-3"></i>
+                            <div>
+                                <strong class="d-block">Farmer Passbook & Milk Access: ₹10 / month</strong>
+                                <small>View daily milk records, check fat percentages, monthly statements, and payment receipts.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Subscription Duration</label>
+                            <select name="months" class="form-select fw-bold">
+                                <option value="1" selected>1 Month (₹10.00)</option>
+                                <option value="3">3 Months (₹30.00)</option>
+                                <option value="6">6 Months (₹60.00)</option>
+                                <option value="12">1 Year (₹120.00)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">UPI Payment Transaction Reference</label>
+                            <input type="text" name="transactionRef" class="form-control" placeholder="e.g. UPI-TXN-123456" required>
+                            <div class="form-text">Pay to Dairy UPI: <code th:text="${settings != null ? settings.societyUpiId : 'tnagaveeranjineyulu@oksbi'}"></code></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success fw-bold">
+                            <i class="fa-solid fa-check me-1"></i> Submit Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+/* Village Milk Collection & Money Management System Styles */
+:root {
+    --primary: #0284c7;
+    --primary-dark: #0369a1;
+    --primary-hover: #075985;
+    --secondary: #059669;
+    --secondary-hover: #047857;
+    --accent: #d97706;
+    --danger: #dc2626;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --text-muted: #64748b;
+}
+
+body {
+    background-color: #f1f5f9;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Navigation */
+.navbar-custom {
+    background: linear-gradient(135deg, #0f766e 0%, #0369a1 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-farmer {
+    background: linear-gradient(135deg, #15803d 0%, #047857 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-custom .navbar-brand, .navbar-farmer .navbar-brand {
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    margin-right: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+}
+
+.icon-blue { background-color: #e0f2fe; color: #0284c7; }
+.icon-green { background-color: #d1fae5; color: #059669; }
+.icon-amber { background-color: #fef3c7; color: #d97706; }
+.icon-purple { background-color: #ede9fe; color: #7c3aed; }
+.icon-red { background-color: #fee2e2; color: #dc2626; }
+
+.stat-title {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--dark);
+    line-height: 1.2;
+}
+
+/* Custom Cards */
+.card-custom {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.card-custom-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-custom-header h5 {
+    margin: 0;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+/* Tables */
+.table-custom {
+    margin-bottom: 0;
+}
+
+.table-custom th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-top: none;
+    padding: 14px 16px;
+}
+
+.table-custom td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    color: #334155;
+    border-color: var(--border-color);
+}
+
+/* Badges */
+.badge-shift {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badge-morning { background-color: #fef3c7; color: #92400e; }
+.badge-evening { background-color: #e0e7ff; color: #3730a3; }
+
+.badge-paid { background-color: #d1fae5; color: #065f46; font-weight: 600; }
+.badge-pending { background-color: #fee2e2; color: #991b1b; font-weight: 600; }
+.badge-upi { background-color: #ede9fe; color: #5b21b6; }
+.badge-cash { background-color: #e0f2fe; color: #075985; }
+.badge-bank { background-color: #fef9c3; color: #854d0e; }
+
+/* Forms & Large Touch Inputs */
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 10px 14px;
+    border-color: #cbd5e1;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-lg-village {
+    padding: 14px 24px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+/* Login Card */
+.login-card {
+    max-width: 440px;
+    margin: 60px auto;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-logo {
+    width: 72px;
+    height: 72px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    margin: 0 auto 16px;
+}
+
+.passbook-container {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 36px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid var(--border-color);
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background-color: #ffffff;
+    }
+    .passbook-container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+}

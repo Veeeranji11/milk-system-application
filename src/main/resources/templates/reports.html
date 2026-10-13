@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Hub - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3 no-print">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/farmers}">
+                            <i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/collections}">
+                            <i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/payments}">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/admin/reports}">
+                            <i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+                    <button onclick="window.print()" class="btn btn-warning btn-sm fw-bold text-dark">
+                        <i class="fa-solid fa-print me-1"></i> <span data-i18n="print">Print Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- Report Tabs Navigation (no-print) -->
+        <div class="card-custom mb-4 no-print">
+            <div class="p-3">
+                <ul class="nav nav-pills nav-fill gap-2" id="reportTabs">
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${activeTab == 'daily' ? 'active' : ''}" th:href="@{/admin/reports(tab='daily')}">
+                            <i class="fa-solid fa-calendar-day me-1"></i> 1. Daily Collection Report
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${activeTab == 'monthly' ? 'active' : ''}" th:href="@{/admin/reports(tab='monthly')}">
+                            <i class="fa-solid fa-calendar-days me-1"></i> 2. Monthly Summary
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${activeTab == 'farmers' ? 'active' : ''}" th:href="@{/admin/reports(tab='farmers')}">
+                            <i class="fa-solid fa-users me-1"></i> 3. Farmer-wise Report
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${activeTab == 'pending' ? 'active' : ''}" th:href="@{/admin/reports(tab='pending')}">
+                            <i class="fa-solid fa-hand-holding-dollar me-1"></i> 4. Pending Payments
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 1. DAILY MILK REPORT -->
+        <div th:if="${activeTab == 'daily'}">
+            <!-- Filter Bar (no-print) -->
+            <div class="card-custom mb-4 no-print">
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-filter me-2 text-primary"></i>Daily Milk Intake Report Filter</h5>
+                    <form th:action="@{/admin/reports}" method="get" class="d-flex gap-2">
+                        <input type="hidden" name="tab" value="daily">
+                        <input type="date" name="date" class="form-control" th:value="${selectedDate}">
+                        <button type="submit" class="btn btn-primary fw-semibold"><i class="fa-solid fa-arrows-rotate me-1"></i> Fetch</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Report Card -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div>
+                        <h4 class="fw-bold mb-0">Daily Milk Collection Report: <span class="text-primary" th:text="${selectedDate}"></span></h4>
+                        <small class="text-muted" th:text="${settings.societyName}">Village Milk Producers Society</small>
+                    </div>
+                    <span class="badge bg-primary fs-6 px-3 py-2" th:text="${dailyReport.entriesCount} + ' Intakes Recorded'"></span>
+                </div>
+                <div class="p-4">
+                    <!-- Shift Breakdown Stats -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 col-md-3">
+                            <div class="p-3 bg-light rounded border text-center">
+                                <div class="text-muted small">🌅 Morning Shift</div>
+                                <div class="fs-4 fw-bold text-dark"><span th:text="${dailyReport.morningLitres}">0</span> L</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="p-3 bg-light rounded border text-center">
+                                <div class="text-muted small">🌇 Evening Shift</div>
+                                <div class="fs-4 fw-bold text-dark"><span th:text="${dailyReport.eveningLitres}">0</span> L</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="p-3 bg-light rounded border text-center">
+                                <div class="text-muted small">Total Daily Milk</div>
+                                <div class="fs-4 fw-bold text-primary"><span th:text="${dailyReport.totalLitres}">0</span> L</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="p-3 bg-light rounded border text-center">
+                                <div class="text-muted small">Total Payout Cost</div>
+                                <div class="fs-4 fw-bold text-success">₹<span th:text="${dailyReport.totalAmount}">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collections Detail Table -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-custom align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Farmer ID</th>
+                                    <th>Farmer Name</th>
+                                    <th>Shift</th>
+                                    <th>Milk (Litres)</th>
+                                    <th>Fat %</th>
+                                    <th>Rate / Litre</th>
+                                    <th class="text-end">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(dailyReport.collections)}">
+                                    <td colspan="8" class="text-center py-4 text-muted">No milk collection entries found for this date.</td>
+                                </tr>
+                                <tr th:each="c, iterStat : ${dailyReport.collections}">
+                                    <td th:text="${iterStat.count}">1</td>
+                                    <td><span class="badge bg-light text-secondary border" th:text="'#' + ${c.farmerId}"></span></td>
+                                    <td class="fw-bold text-dark" th:text="${c.farmerName}"></td>
+                                    <td>
+                                        <span th:if="${c.shift == 'Morning'}" class="badge badge-shift badge-morning">🌅 Morning</span>
+                                        <span th:if="${c.shift == 'Evening'}" class="badge badge-shift badge-evening">🌇 Evening</span>
+                                        <span th:if="${c.shift != 'Morning' and c.shift != 'Evening'}" class="badge badge-shift badge-morning" th:text="${c.shift}"></span>
+                                    </td>
+                                    <td><strong th:text="${c.litres}"></strong> L</td>
+                                    <td><span class="badge bg-light text-dark border" th:text="${c.fatPercentage + '%'}"></span></td>
+                                    <td>₹<span th:text="${c.ratePerLitre}"></span></td>
+                                    <td class="text-end fw-bold text-success">₹<span th:text="${c.amount}"></span></td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-secondary fw-bold">
+                                <tr>
+                                    <td colspan="4" class="text-end">TOTALS:</td>
+                                    <td><span th:text="${dailyReport.totalLitres}">0</span> L</td>
+                                    <td>Avg: <span th:text="${dailyReport.avgFat}">0</span>%</td>
+                                    <td>-</td>
+                                    <td class="text-end text-success fs-5">₹<span th:text="${dailyReport.totalAmount}">0</span></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. MONTHLY MILK & FINANCIAL REPORT -->
+        <div th:if="${activeTab == 'monthly'}">
+            <!-- Filter Bar (no-print) -->
+            <div class="card-custom mb-4 no-print">
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-filter me-2 text-primary"></i>Monthly Summary Filter</h5>
+                    <form th:action="@{/admin/reports}" method="get" class="d-flex gap-2">
+                        <input type="hidden" name="tab" value="monthly">
+                        <select name="month" class="form-select">
+                            <option value="1" th:selected="${selectedMonth == 1}">January</option>
+                            <option value="2" th:selected="${selectedMonth == 2}">February</option>
+                            <option value="3" th:selected="${selectedMonth == 3}">March</option>
+                            <option value="4" th:selected="${selectedMonth == 4}">April</option>
+                            <option value="5" th:selected="${selectedMonth == 5}">May</option>
+                            <option value="6" th:selected="${selectedMonth == 6}">June</option>
+                            <option value="7" th:selected="${selectedMonth == 7}">July</option>
+                            <option value="8" th:selected="${selectedMonth == 8}">August</option>
+                            <option value="9" th:selected="${selectedMonth == 9}">September</option>
+                            <option value="10" th:selected="${selectedMonth == 10}">October</option>
+                            <option value="11" th:selected="${selectedMonth == 11}">November</option>
+                            <option value="12" th:selected="${selectedMonth == 12}">December</option>
+                        </select>
+                        <input type="number" name="year" class="form-control" th:value="${selectedYear}" min="2020" max="2035" style="width: 100px;">
+                        <button type="submit" class="btn btn-primary fw-semibold"><i class="fa-solid fa-arrows-rotate me-1"></i> Generate</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div>
+                        <h4 class="fw-bold mb-0">Monthly Financial & Milk Intake Statement: <span class="text-primary" th:text="${monthlyReport.yearMonth}"></span></h4>
+                        <small class="text-muted">From <span th:text="${monthlyReport.startDate}"></span> to <span th:text="${monthlyReport.endDate}"></span></small>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 col-md-3">
+                            <div class="stat-card">
+                                <div>
+                                    <div class="stat-title">Monthly Milk (L)</div>
+                                    <div class="stat-value text-primary"><span th:text="${monthlyReport.totalLitres}">0</span> <small class="fs-6 fw-normal text-muted">L</small></div>
+                                    <small class="text-muted"><span th:text="${monthlyReport.collectionsCount}">0</span> intakes</small>
+                                </div>
+                                <div class="stat-icon icon-blue"><i class="fa-solid fa-bucket"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="stat-card">
+                                <div>
+                                    <div class="stat-title">Milk Value / Cost</div>
+                                    <div class="stat-value text-dark">₹<span th:text="${monthlyReport.totalEarned}">0</span></div>
+                                    <small class="text-muted">Total value</small>
+                                </div>
+                                <div class="stat-icon icon-amber"><i class="fa-solid fa-coins"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="stat-card">
+                                <div>
+                                    <div class="stat-title">Payments Disbursed</div>
+                                    <div class="stat-value text-success">₹<span th:text="${monthlyReport.totalPaid}">0</span></div>
+                                    <small class="text-muted"><span th:text="${monthlyReport.paymentsCount}">0</span> payouts</small>
+                                </div>
+                                <div class="stat-icon icon-green"><i class="fa-solid fa-circle-check"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="stat-card">
+                                <div>
+                                    <div class="stat-title">Month Net Due</div>
+                                    <div class="stat-value text-danger">₹<span th:text="${monthlyReport.netMonthlyBalance}">0</span></div>
+                                    <small class="text-muted">Unpaid balance</small>
+                                </div>
+                                <div class="stat-icon icon-red"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. FARMER-WISE MILK & PAYMENT PERFORMANCE REPORT -->
+        <div th:if="${activeTab == 'farmers'}">
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div>
+                        <h4 class="fw-bold mb-0">Farmer-wise Performance & Ledger Summary</h4>
+                        <small class="text-muted">Lifetime volume, gross earnings, disbursements, and current balance status per farmer</small>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#ID</th>
+                                <th>Farmer Name</th>
+                                <th>Phone</th>
+                                <th>Village</th>
+                                <th>Total Milk (L)</th>
+                                <th>Deliveries</th>
+                                <th>Total Earned (₹)</th>
+                                <th>Total Paid (₹)</th>
+                                <th>Pending Due (₹)</th>
+                                <th class="text-end no-print">Passbook</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="s : ${farmerSummaries}">
+                                <td><span class="badge bg-light text-secondary border" th:text="'#' + ${s.farmer.id}"></span></td>
+                                <td class="fw-bold text-dark" th:text="${s.farmer.name}"></td>
+                                <td th:text="${s.farmer.phone}"></td>
+                                <td th:text="${s.farmer.village != null ? s.farmer.village : '-'}"></td>
+                                <td><strong th:text="${s.totalLitres}"></strong> L</td>
+                                <td><span class="badge bg-light text-dark" th:text="${s.totalSuppliesCount}"></span></td>
+                                <td class="fw-semibold">₹<span th:text="${s.totalEarned}"></span></td>
+                                <td class="text-success fw-semibold">₹<span th:text="${s.totalPaid}"></span></td>
+                                <td>
+                                    <span th:if="${s.pendingBalance > 0}" class="badge badge-pending fs-6">₹<span th:text="${s.pendingBalance}"></span></span>
+                                    <span th:unless="${s.pendingBalance > 0}" class="badge badge-paid">Settled (₹0.00)</span>
+                                </td>
+                                <td class="text-end no-print">
+                                    <a th:href="@{'/admin/farmers/' + ${s.farmer.id} + '/statement'}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fa-solid fa-file-invoice me-1"></i> Passbook
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-secondary fw-bold">
+                            <tr>
+                                <td colspan="4" class="text-end">VILLAGE TOTALS:</td>
+                                <td><span th:text="${totalLitres}"></span> L</td>
+                                <td>-</td>
+                                <td>₹<span th:text="${totalAmount}"></span></td>
+                                <td class="text-success">₹<span th:text="${totalPaid}"></span></td>
+                                <td class="text-danger">₹<span th:text="${totalPending}"></span></td>
+                                <td class="no-print"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PENDING PAYMENTS REPORT -->
+        <div th:if="${activeTab == 'pending'}">
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div>
+                        <h4 class="fw-bold mb-0 text-danger"><i class="fa-solid fa-hand-holding-dollar me-2"></i>Outstanding Pending Payments Report</h4>
+                        <small class="text-muted">Farmers with unpaid milk balances requiring society disbursement</small>
+                    </div>
+                    <span class="badge bg-danger fs-5 px-3 py-2">Total Due: ₹<span th:text="${totalPending}">0.00</span></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#ID</th>
+                                <th>Farmer Name</th>
+                                <th>Phone</th>
+                                <th>Village</th>
+                                <th>Bank / UPI Details</th>
+                                <th>Total Earned (₹)</th>
+                                <th>Total Paid (₹)</th>
+                                <th>Pending Balance Due (₹)</th>
+                                <th class="text-end no-print">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(pendingReports)}">
+                                <td colspan="9" class="text-center py-5 text-success fs-5">
+                                    <i class="fa-solid fa-circle-check fs-2 mb-2 d-block"></i>
+                                    All accounts are settled! No pending balances due.
+                                </td>
+                            </tr>
+                            <tr th:each="p : ${pendingReports}">
+                                <td><span class="badge bg-light text-secondary border" th:text="'#' + ${p.farmer.id}"></span></td>
+                                <td class="fw-bold text-dark fs-6" th:text="${p.farmer.name}"></td>
+                                <td th:text="${p.farmer.phone}"></td>
+                                <td th:text="${p.farmer.village != null ? p.farmer.village : '-'}"></td>
+                                <td>
+                                    <span th:if="${p.farmer.upiId != null and !p.farmer.upiId.isEmpty()}" class="badge badge-upi me-1" th:text="${p.farmer.upiId}"></span>
+                                    <span th:if="${p.farmer.bankAccountNo != null and !p.farmer.bankAccountNo.isEmpty()}" class="badge badge-bank">A/C: <span th:text="${p.farmer.bankAccountNo}"></span></span>
+                                    <span th:if="${(p.farmer.upiId == null or p.farmer.upiId.isEmpty()) and (p.farmer.bankAccountNo == null or p.farmer.bankAccountNo.isEmpty())}" class="text-muted small">Cash</span>
+                                </td>
+                                <td>₹<span th:text="${p.totalEarned}"></span></td>
+                                <td class="text-success">₹<span th:text="${p.totalPaid}"></span></td>
+                                <td>
+                                    <span class="badge bg-danger fs-6 px-3 py-2">₹<span th:text="${p.pendingBalance}"></span></span>
+                                </td>
+                                <td class="text-end no-print">
+                                    <a th:href="@{'/admin/payments/add?farmerId=' + ${p.farmer.id}}" class="btn btn-sm btn-success fw-bold">
+                                        <i class="fa-solid fa-money-bill-wave me-1"></i> Disburse Payout
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-secondary fw-bold" th:unless="${#lists.isEmpty(pendingReports)}">
+                            <tr>
+                                <td colspan="7" class="text-end">TOTAL SOCIETY OUTSTANDING LIABILITY:</td>
+                                <td class="text-danger fs-5">₹<span th:text="${totalPending}"></span></td>
+                                <td class="no-print"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap & JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+</body>
+</html>

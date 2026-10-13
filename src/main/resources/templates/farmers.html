@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmers Directory - Village Milk System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fa-solid fa-cow fs-4 text-warning"></i>
+                <span data-i18n="systemTitle">Village Milk System</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fa-solid fa-chart-line me-1"></i> <span data-i18n="dashboard">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/admin/farmers}">
+                            <i class="fa-solid fa-users me-1"></i> <span data-i18n="farmers">Farmers</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/collections}">
+                            <i class="fa-solid fa-bottle-droplet me-1"></i> <span data-i18n="collections">Collections</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/payments}">
+                            <i class="fa-solid fa-indian-rupee-sign me-1"></i> <span data-i18n="payments">Payments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/reports}">
+                            <i class="fa-solid fa-file-lines me-1"></i> <span data-i18n="reports">Reports</span>
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm me-2">
+                        <button type="button" class="btn btn-outline-light lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button type="button" class="btn btn-outline-light lang-btn" data-lang="te" onclick="setLanguage('te')">తెలుగు</button>
+                    </div>
+
+                    <a th:href="@{/admin/farmers/add}" class="btn btn-warning btn-sm fw-bold text-dark">
+                        <i class="fa-solid fa-user-plus me-1"></i> Register Farmer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container py-4">
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Header & Search Bar -->
+        <div class="card-custom mb-4">
+            <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fa-solid fa-users text-primary me-2"></i><span data-i18n="farmers">Registered Dairy Farmers</span></h4>
+                    <p class="text-muted small mb-0">Manage farmer profiles, view passbook statements, record payouts and reset credentials.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <!-- Search Form -->
+                    <form th:action="@{/admin/farmers}" method="get" class="d-flex gap-2">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Search by name, phone or village..." th:value="${search}">
+                            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        </div>
+                        <a th:if="${search != null and !search.isEmpty()}" th:href="@{/admin/farmers}" class="btn btn-outline-secondary" title="Clear Search">
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    </form>
+                    <a th:href="@{/admin/farmers/add}" class="btn btn-success fw-bold text-nowrap">
+                        <i class="fa-solid fa-plus me-1"></i> Register New
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Farmers Table -->
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th data-i18n="farmer">Farmer Name</th>
+                            <th data-i18n="phone">Contact Phone</th>
+                            <th data-i18n="village">Village / Area</th>
+                            <th data-i18n="cattle">Cattle</th>
+                            <th>Payment Info</th>
+                            <th>Registered</th>
+                            <th class="text-end" data-i18n="actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(farmers)}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-user-slash fs-2 mb-2 d-block text-secondary"></i>
+                                No farmers found matching your criteria.
+                            </td>
+                        </tr>
+                        <tr th:each="f : ${farmers}">
+                            <td>
+                                <span class="badge bg-primary text-white fw-bold px-2 py-1" th:text="${f.code != null ? f.code : 'FMR-' + f.id}"></span>
+                                <div class="text-muted small mt-1">#<span th:text="${f.id}"></span></div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-6" th:text="${f.name}"></div>
+                                <small class="text-muted">Login ID / Code: <code class="fw-bold text-primary" th:text="${f.code != null ? f.code : f.id}"></code></small>
+                            </td>
+                            <td>
+                                <a th:href="'tel:' + ${f.phone}" class="text-decoration-none text-secondary">
+                                    <i class="fa-solid fa-phone small me-1"></i><span th:text="${f.phone}"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <span th:if="${f.village != null and !f.village.isEmpty()}" th:text="${f.village}"></span>
+                                <span th:unless="${f.village != null and !f.village.isEmpty()}" class="text-muted fst-italic">-</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark" th:text="${f.buffaloCount} + ' Cattle'"></span>
+                            </td>
+                            <td>
+                                <span th:if="${f.upiId != null and !f.upiId.isEmpty()}" class="badge badge-upi me-1" th:text="${f.upiId}"></span>
+                                <span th:if="${f.bankAccountNo != null and !f.bankAccountNo.isEmpty()}" class="badge badge-bank">A/C: <span th:text="${f.bankAccountNo}"></span></span>
+                                <span th:if="${(f.upiId == null or f.upiId.isEmpty()) and (f.bankAccountNo == null or f.bankAccountNo.isEmpty())}" class="text-muted small">Cash</span>
+                            </td>
+                            <td>
+                                <small class="text-muted" th:text="${f.registrationDate != null ? f.registrationDate : 'N/A'}"></small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{'/admin/payments/add?farmerId=' + ${f.id}}" class="btn btn-outline-success" title="Pay Farmer">
+                                        <i class="fa-solid fa-indian-rupee-sign"></i> Pay
+                                    </a>
+                                    <a th:href="@{'/admin/farmers/' + ${f.id} + '/statement'}" class="btn btn-outline-primary" title="View Passbook / Statement">
+                                        <i class="fa-solid fa-file-invoice"></i> Passbook
+                                    </a>
+                                    <a th:href="@{'/admin/farmers/edit/' + ${f.id}}" class="btn btn-outline-secondary" title="Edit Farmer">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning text-dark" title="Reset Password"
+                                            th:onclick="'openResetModal(' + ${f.id} + ', \'' + ${f.name} + '\')'">
+                                        <i class="fa-solid fa-key"></i>
+                                    </button>
+                                    <a th:href="@{'/admin/farmers/delete/' + ${f.id}}" class="btn btn-outline-danger" title="Delete Farmer" onclick="return confirm('Are you sure you want to delete this farmer?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="resetPasswordForm" method="post">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Reset Farmer Password</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">Reset login password for <strong id="resetFarmerName"></strong> (ID: #<span id="resetFarmerId"></span>):</p>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Password</label>
+                            <input type="password" name="newPassword" class="form-control" placeholder="Enter new password" required minlength="4" value="farmer123">
+                            <div class="form-text">Default recommended: <code>farmer123</code></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark">Save New Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/app.js}"></script>
+    <script>
+        function openResetModal(id, name) {
+            document.getElementById('resetFarmerId').innerText = id;
+            document.getElementById('resetFarmerName').innerText = name;
+            document.getElementById('resetPasswordForm').action = '/admin/farmers/' + id + '/reset-password';
+            new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+        }
+    </script>
+</body>
+</html>
+
